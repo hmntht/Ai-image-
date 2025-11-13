@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Visual Transmutation Forge</title>
+    <title>The Visual Transmutation Forge (V2)</title>
+    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for a magical, dark-themed look */
@@ -41,26 +42,47 @@
         /* Image viewport style */
         .image-viewport {
             min-height: 250px;
+            height: 60vh; /* Fixed height for better layout */
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             background-color: #1f2937;
             border: 2px dashed #4f46e5; /* Indigo dashed border */
+            overflow: hidden;
+            position: relative;
         }
-        .image-viewport img {
+
+        /* Style for the input image preview */
+        #inputPreview {
             max-width: 100%;
-            max-height: 60vh;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 0.75rem;
+        }
+        
+        /* Style for the result image */
+        #resultImage {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
             border-radius: 0.75rem;
             box-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
         }
-        .loading-spinner {
+        
+        /* Loading animation for the result box */
+        .loading-animation {
+            height: 48px;
+            width: 48px;
+            border: 5px solid #4f46e5;
             border-top-color: #8b5cf6;
-            -webkit-animation: spinner 1.2s linear infinite;
-            animation: spinner 1.2s linear infinite;
+            border-radius: 50%;
+            animation: spinner 0.8s linear infinite;
         }
         @keyframes spinner {
             to {transform: rotate(360deg);}
         }
+
         .glow-text {
             text-shadow: 0 0 5px #a78bfa;
         }
@@ -73,27 +95,38 @@
             ring-color: #a78bfa;
             border-color: #a78bfa;
         }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .image-viewport {
+                height: 40vh; /* Slightly smaller on mobile */
+            }
+        }
     </style>
 </head>
 <body>
     
+    <!-- 🔑 API KEY INJECTION: Using the last key you provided. -->
     <script>
-        // Define the API key so the application can find it
         const API_KEY_GLOBAL = "AIzaSyBH4Ps3t-igbQsCOR2W-GaaRU5Qb-MbaVs";
     </script>
+    <!-- End of Key Injection -->
+
     <div id="app" class="container mx-auto">
         <header class="text-center py-8 mb-8">
-            <h1 class="text-4xl font-extrabold glow-text text-indigo-400 italic">The Visual Transmutation Forge</h1>
+            <h1 class="text-4xl font-extrabold glow-text text-indigo-400 italic">The Visual Transmutation Forge (V2)</h1>
             <p class="text-indigo-300 mt-2 italic">A chamber for image alteration via whispered incantation.</p>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Incantation & Catalyst Card -->
             <div class="forge-card space-y-6">
                 <h2 class="text-2xl font-semibold text-indigo-300 flex items-center mb-4">
                     <span class="text-3xl mr-3">🔮</span>
                     1. Catalyst & Incantation
                 </h2>
 
+                <!-- File Input (The Catalyst) -->
                 <div>
                     <label for="imageUpload" class="block text-sm font-medium text-indigo-200 mb-2">The Raw Material (Image Scroll)</label>
                     <input type="file" id="imageUpload" accept="image/jpeg, image/png" class="block w-full text-sm text-indigo-200
@@ -105,23 +138,33 @@
                     "/>
                 </div>
 
+                <!-- Input Image Preview Box -->
+                <div id="inputImageBox" class="image-viewport rounded-xl">
+                    <p id="inputPlaceholder" class="text-gray-500 italic text-center p-4">Your uploaded image preview will appear here.</p>
+                    <img id="inputPreview" src="" alt="Input Image Preview" class="hidden">
+                </div>
+
+                <!-- Prompt Input (The Incantation) -->
                 <div>
                     <label for="prompt" class="block text-sm font-medium text-indigo-200 mb-2">The Spell Incantation</label>
-                    <textarea id="prompt" rows="5" class="w-full p-4 input-dark border rounded-xl focus:ring-purple-400 focus:border-purple-400 transition duration-150 resize-none" placeholder="e.g., 'Separate the subject and transpose her onto a background of a shimmering cosmic nebula in the style of a vintage oil painting.'"></textarea>
+                    <textarea id="prompt" rows="3" class="w-full p-4 input-dark border rounded-xl focus:ring-purple-400 focus:border-purple-400 transition duration-150 resize-none" placeholder="e.g., 'Separate the subject and transpose her onto a background of a shimmering cosmic nebula in the style of a vintage oil painting.'"></textarea>
                 </div>
                 
                 <p id="imageStatus" class="text-sm text-red-400"></p>
 
+                <!-- Transmute Button -->
                 <button onclick="handleGeneration()" id="generateBtn" class="btn-magic w-full text-white font-extrabold py-4 rounded-xl shadow-xl disabled:opacity-50 flex items-center justify-center text-lg">
                     <span id="btnText">Execute Transmutation</span>
                     <div id="spinner" class="loading-spinner h-6 w-6 border-4 border-t-white rounded-full ml-3 hidden"></div>
                 </button>
 
+                <!-- Error Message -->
                 <div id="errorBox" class="p-4 bg-red-900 border-l-4 border-red-500 text-red-300 rounded-lg hidden" role="alert">
                     <p id="errorMessage" class="font-bold">Failure: The Incantation was Flawed.</p>
                 </div>
             </div>
 
+            <!-- Result Card -->
             <div class="forge-card space-y-6">
                 <h2 class="text-2xl font-semibold text-indigo-300 flex items-center mb-4">
                     <span class="text-3xl mr-3">✨</span>
@@ -129,9 +172,10 @@
                 </h2>
                 
                 <div id="imageResultBox" class="image-viewport rounded-xl">
-                    <p id="placeholderText" class="text-gray-500 italic">The forged artifact will materialize here.</p>
+                    <p id="resultPlaceholder" class="text-gray-500 italic">The forged artifact will materialize here.</p>
                 </div>
 
+                <!-- Download Button -->
                 <button id="downloadBtn" onclick="downloadImage()" class="w-full bg-green-500 hover:bg-green-600 text-white font-extrabold py-3 rounded-xl shadow-lg disabled:opacity-50 mt-4 hidden">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline-block" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -142,17 +186,15 @@
         </div>
     </div>
 
+    <!-- Firebase boilerplate kept for execution environment compatibility (not used by the core app logic) -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
         window.firebaseInit = async function() {
             try {
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
                 if (Object.keys(firebaseConfig).length === 0) { return; }
                 setLogLevel('Debug');
                 const app = initializeApp(firebaseConfig);
@@ -160,6 +202,7 @@
                 await new Promise(resolve => {
                     onAuthStateChanged(auth, async (user) => {
                         if (!user) {
+                            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
                             if (initialAuthToken) { await signInWithCustomToken(auth, initialAuthToken); } 
                             else { await signInAnonymously(auth); }
                         }
@@ -175,11 +218,11 @@
     <script>
         // --- CORE ALCHEMY ENGINE ---
         
-        // ** API KEY NOTE: Overriding the default empty key with the one provided by the user. **
-        // Looks for the globally defined API_KEY_GLOBAL if available.
         const API_KEY = typeof API_KEY_GLOBAL !== 'undefined' ? API_KEY_GLOBAL : "";
         const MODEL_NAME = "gemini-2.5-flash-image-preview";
         const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+        // CRITICAL FIX: The API has a hard 1MB payload limit, so we set a safe file limit of 800 KB
+        const MAX_FILE_SIZE = 800 * 1024; 
 
         let generatedImageBase64 = null;
         let originalImageMimeType = null;
@@ -188,24 +231,81 @@
         const imageUpload = document.getElementById('imageUpload');
         const promptInput = document.getElementById('prompt');
         const generateBtn = document.getElementById('generateBtn');
-        const spinner = document.getElementById('spinner');
-        const btnText = document.getElementById('btnText');
         const errorBox = document.getElementById('errorBox');
         const errorMessage = document.getElementById('errorMessage');
         const imageResultBox = document.getElementById('imageResultBox');
-        const placeholderText = document.getElementById('placeholderText');
+        const resultPlaceholder = document.getElementById('resultPlaceholder');
+        const inputPlaceholder = document.getElementById('inputPlaceholder');
+        const inputPreview = document.getElementById('inputPreview');
         const downloadBtn = document.getElementById('downloadBtn');
         const imageStatus = document.getElementById('imageStatus');
 
 
+        // --- UI UTILITY FUNCTIONS ---
+
+        function displayInputPreview(file) {
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    inputPreview.src = e.target.result;
+                    inputPreview.classList.remove('hidden');
+                    inputPlaceholder.classList.add('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                inputPreview.src = '';
+                inputPreview.classList.add('hidden');
+                inputPlaceholder.classList.remove('hidden');
+            }
+        }
+
+        function setGenerationState(isLoading) {
+            generateBtn.disabled = isLoading;
+            document.getElementById('btnText').textContent = isLoading ? 'Transmuting...' : 'Execute Transmutation';
+            errorBox.classList.add('hidden');
+            downloadBtn.classList.add('hidden');
+
+            if (isLoading) {
+                // Show custom spinner in result box
+                imageResultBox.innerHTML = '<div class="loading-animation"></div>';
+                resultPlaceholder.classList.add('hidden');
+            } else {
+                // Clear spinner
+                imageResultBox.innerHTML = '';
+                resultPlaceholder.classList.remove('hidden');
+            }
+        }
+
+        function displayError(message) {
+            setGenerationState(false); // Stop loading animation
+            errorMessage.innerHTML = `Failure: ${message}`;
+            errorBox.classList.remove('hidden');
+            resultPlaceholder.classList.remove('hidden');
+            imageResultBox.innerHTML = '';
+        }
+
+        function displayResult(base64Data) {
+            // Clear placeholder/spinner
+            imageResultBox.innerHTML = ''; 
+            resultPlaceholder.classList.add('hidden');
+            
+            const img = document.createElement('img');
+            img.id = 'resultImage';
+            img.src = `data:image/png;base64,${base64Data}`;
+            img.alt = "Forged Artifact";
+            imageResultBox.appendChild(img);
+
+            generatedImageBase64 = base64Data;
+            downloadBtn.classList.remove('hidden');
+        }
+        
+        // --- CORE LOGIC ---
+
         // Function to convert File to Base64 (The Raw Material Prep)
         function fileToBase64(file) {
             return new Promise((resolve, reject) => {
-                // FIX: Setting max size to 800 KB to safely stay under the API's hard 1 MB payload limit
-                const maxFileSize = 800 * 1024; 
-                
-                if (file.size > maxFileSize) {
-                    reject(new Error("The image scroll is too large. For this version, it must be under 800 KB."));
+                if (file.size > MAX_FILE_SIZE) {
+                    reject(new Error(`The image scroll is too large. It must be under ${Math.round(MAX_FILE_SIZE / 1024)} KB for this application.`));
                     return;
                 }
                 const reader = new FileReader();
@@ -217,41 +317,6 @@
                 reader.onerror = error => reject(error);
             });
         }
-
-        // UI State Management
-        function setGenerationState(isLoading) {
-            generateBtn.disabled = isLoading;
-            spinner.classList.toggle('hidden', !isLoading);
-            btnText.textContent = isLoading ? 'Transmuting...' : 'Execute Transmutation';
-            errorBox.classList.add('hidden');
-            downloadBtn.classList.add('hidden');
-        }
-
-        function displayError(message) {
-            errorMessage.innerHTML = `Failure: ${message}`;
-            errorBox.classList.remove('hidden');
-        }
-
-        function clearResult() {
-            imageResultBox.innerHTML = '';
-            placeholderText.classList.remove('hidden');
-            downloadBtn.classList.add('hidden');
-            generatedImageBase64 = null;
-            imageStatus.textContent = "";
-        }
-
-        function displayResult(base64Data) {
-            clearResult();
-            placeholderText.classList.add('hidden');
-            
-            const img = document.createElement('img');
-            img.src = `data:image/png;base64,${base64Data}`;
-            img.alt = "Forged Artifact";
-            imageResultBox.appendChild(img);
-
-            generatedImageBase64 = base64Data;
-            downloadBtn.classList.remove('hidden');
-        }
         
         // Retry mechanism (Exponential Backoff)
         async function fetchWithBackoff(url, options, maxRetries = 5) {
@@ -259,7 +324,8 @@
                 try {
                     const response = await fetch(url, options);
                     if (response.status === 429 && attempt < maxRetries - 1) {
-                        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 500;
+                        console.warn(`Forge attempt failed (Retry ${attempt + 1}/${maxRetries}): Rate limit. Retrying in ${Math.round(delay/1000)}s...`);
                         await new Promise(resolve => setTimeout(resolve, delay));
                         continue;
                     }
@@ -281,7 +347,7 @@
         async function handleGeneration() {
             const file = imageUpload.files[0];
             const userPrompt = promptInput.value.trim();
-            clearResult();
+            imageStatus.textContent = "";
 
             if (!file) {
                 imageStatus.textContent = "Please provide the raw image scroll (Catalyst).";
@@ -291,10 +357,8 @@
                 imageStatus.textContent = "Please whisper the full Spell Incantation (Prompt).";
                 return;
             }
-
-            // Check if API key is present before trying to generate
             if (!API_KEY) {
-                displayError("The API Key is missing. Please insert your key into the HTML file.");
+                displayError("The API Key is missing. Please ensure API_KEY_GLOBAL is defined.");
                 return;
             }
 
@@ -320,7 +384,7 @@
                         }
                     ],
                     generationConfig: {
-                        responseModalities: ['IMAGE'] // Requesting image output
+                        responseModalities: ['IMAGE']
                     },
                 };
 
@@ -373,7 +437,16 @@
         }
 
         // Attach listeners
-        imageUpload.addEventListener('change', clearResult);
+        imageUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            generatedImageBase64 = null;
+            imageStatus.textContent = "";
+            resultPlaceholder.classList.remove('hidden');
+            imageResultBox.innerHTML = '';
+            downloadBtn.classList.add('hidden');
+            displayInputPreview(file);
+        });
+
         window.onload = function() {
             console.log("Visual Transmutation Forge ready. Awaiting catalyst.");
         };
@@ -381,3 +454,4 @@
     </script>
 </body>
 </html>
+
