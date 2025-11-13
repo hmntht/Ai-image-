@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Visual Transmutation Forge</title>
-    <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for a magical, dark-themed look */
@@ -77,14 +76,11 @@
     </style>
 </head>
 <body>
-
-    <!--
-        [SECURITY NOTE]: This application uses a REST endpoint for image generation which requires an API key.
-        The API_KEY variable is empty here but is injected at runtime in this execution environment.
-        For public deployment (e.g., on GitHub), a serverless function (backend proxy) is REQUIRED to securely
-        store and use the API key, preventing unauthorized usage.
-    -->
-
+    
+    <script>
+        // Define the API key so the application can find it
+        const API_KEY_GLOBAL = "AIzaSyBH4Ps3t-igbQsCOR2W-GaaRU5Qb-MbaVs";
+    </script>
     <div id="app" class="container mx-auto">
         <header class="text-center py-8 mb-8">
             <h1 class="text-4xl font-extrabold glow-text text-indigo-400 italic">The Visual Transmutation Forge</h1>
@@ -92,14 +88,12 @@
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Incantation & Catalyst Card -->
             <div class="forge-card space-y-6">
                 <h2 class="text-2xl font-semibold text-indigo-300 flex items-center mb-4">
                     <span class="text-3xl mr-3">🔮</span>
                     1. Catalyst & Incantation
                 </h2>
 
-                <!-- File Input (The Catalyst) -->
                 <div>
                     <label for="imageUpload" class="block text-sm font-medium text-indigo-200 mb-2">The Raw Material (Image Scroll)</label>
                     <input type="file" id="imageUpload" accept="image/jpeg, image/png" class="block w-full text-sm text-indigo-200
@@ -111,7 +105,6 @@
                     "/>
                 </div>
 
-                <!-- Prompt Input (The Incantation) -->
                 <div>
                     <label for="prompt" class="block text-sm font-medium text-indigo-200 mb-2">The Spell Incantation</label>
                     <textarea id="prompt" rows="5" class="w-full p-4 input-dark border rounded-xl focus:ring-purple-400 focus:border-purple-400 transition duration-150 resize-none" placeholder="e.g., 'Separate the subject and transpose her onto a background of a shimmering cosmic nebula in the style of a vintage oil painting.'"></textarea>
@@ -119,19 +112,16 @@
                 
                 <p id="imageStatus" class="text-sm text-red-400"></p>
 
-                <!-- Transmute Button -->
                 <button onclick="handleGeneration()" id="generateBtn" class="btn-magic w-full text-white font-extrabold py-4 rounded-xl shadow-xl disabled:opacity-50 flex items-center justify-center text-lg">
                     <span id="btnText">Execute Transmutation</span>
                     <div id="spinner" class="loading-spinner h-6 w-6 border-4 border-t-white rounded-full ml-3 hidden"></div>
                 </button>
 
-                <!-- Error Message -->
                 <div id="errorBox" class="p-4 bg-red-900 border-l-4 border-red-500 text-red-300 rounded-lg hidden" role="alert">
                     <p id="errorMessage" class="font-bold">Failure: The Incantation was Flawed.</p>
                 </div>
             </div>
 
-            <!-- Result Card -->
             <div class="forge-card space-y-6">
                 <h2 class="text-2xl font-semibold text-indigo-300 flex items-center mb-4">
                     <span class="text-3xl mr-3">✨</span>
@@ -142,7 +132,6 @@
                     <p id="placeholderText" class="text-gray-500 italic">The forged artifact will materialize here.</p>
                 </div>
 
-                <!-- Download Button -->
                 <button id="downloadBtn" onclick="downloadImage()" class="w-full bg-green-500 hover:bg-green-600 text-white font-extrabold py-3 rounded-xl shadow-lg disabled:opacity-50 mt-4 hidden">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline-block" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -153,7 +142,6 @@
         </div>
     </div>
 
-    <!-- Firebase boilerplate kept for execution environment compatibility -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -187,8 +175,9 @@
     <script>
         // --- CORE ALCHEMY ENGINE ---
         
-        // ** API KEY NOTE: Kept empty for platform injection. Do NOT use this on a public web host. **
-        const API_KEY = ""; 
+        // ** API KEY NOTE: Overriding the default empty key with the one provided by the user. **
+        // Looks for the globally defined API_KEY_GLOBAL if available.
+        const API_KEY = typeof API_KEY_GLOBAL !== 'undefined' ? API_KEY_GLOBAL : "";
         const MODEL_NAME = "gemini-2.5-flash-image-preview";
         const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
 
@@ -301,6 +290,13 @@
                 return;
             }
 
+            // Check if API key is present before trying to generate
+            if (!API_KEY) {
+                displayError("The API Key is missing. Please insert your key into the HTML file.");
+                return;
+            }
+
+
             try {
                 setGenerationState(true);
                 const base64Image = await fileToBase64(file);
@@ -383,5 +379,3 @@
     </script>
 </body>
 </html>
-
-
