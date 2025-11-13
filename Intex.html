@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Visual Transmutation Forge</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for a magical, dark-themed look */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1f2937; /* Dark background */
+            min-height: 100vh;
+            color: #d1d5db; /* Light gray text */
+        }
+        .container {
+            max-width: 100%;
+            padding: 1rem;
+        }
+        .forge-card {
+            background-color: #374151; /* Slightly lighter dark card */
+            border-radius: 1.5rem;
+            box-shadow: 0 0 30px rgba(79, 70, 229, 0.4); /* Subtle indigo glow */
+            padding: 2rem;
+            border: 1px solid #4f46e5;
+        }
+        .btn-magic {
+            background-color: #8b5cf6; /* Vibrant purple */
+            transition: background-color 0.3s, transform 0.1s;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.6);
+        }
+        .btn-magic:hover:not(:disabled) {
+            background-color: #7c3aed; /* Deeper purple on hover */
+            transform: translateY(-1px);
+        }
+        .btn-magic:disabled {
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* Image viewport style */
+        .image-viewport {
+            min-height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #1f2937;
+            border: 2px dashed #4f46e5; /* Indigo dashed border */
+        }
+        .image-viewport img {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 0.75rem;
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
+        }
+        .loading-spinner {
+            border-top-color: #8b5cf6;
+            -webkit-animation: spinner 1.2s linear infinite;
+            animation: spinner 1.2s linear infinite;
+        }
+        @keyframes spinner {
+            to {transform: rotate(360deg);}
+        }
+        .glow-text {
+            text-shadow: 0 0 5px #a78bfa;
+        }
+        .input-dark {
+            background-color: #1f2937;
+            border-color: #4f46e5;
+            color: white;
+        }
+        .input-dark:focus {
+            ring-color: #a78bfa;
+            border-color: #a78bfa;
+        }
+    </style>
+</head>
+<body>
+
+    <!--
+        [SECURITY NOTE]: This application uses a REST endpoint for image generation which requires an API key.
+        The API_KEY variable is empty here but is injected at runtime in this execution environment.
+        For public deployment (e.g., on GitHub), a serverless function (backend proxy) is REQUIRED to securely
+        store and use the API key, preventing unauthorized usage.
+    -->
+
+    <div id="app" class="container mx-auto">
+        <header class="text-center py-8 mb-8">
+            <h1 class="text-4xl font-extrabold glow-text text-indigo-400 italic">The Visual Transmutation Forge</h1>
+            <p class="text-indigo-300 mt-2 italic">A chamber for image alteration via whispered incantation.</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Incantation & Catalyst Card -->
+            <div class="forge-card space-y-6">
+                <h2 class="text-2xl font-semibold text-indigo-300 flex items-center mb-4">
+                    <span class="text-3xl mr-3">🔮</span>
+                    1. Catalyst & Incantation
+                </h2>
+
+                <!-- File Input (The Catalyst) -->
+                <div>
+                    <label for="imageUpload" class="block text-sm font-medium text-indigo-200 mb-2">The Raw Material (Image Scroll)</label>
+                    <input type="file" id="imageUpload" accept="image/jpeg, image/png" class="block w-full text-sm text-indigo-200
+                        file:mr-4 file:py-3 file:px-4
+                        file:rounded-xl file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-indigo-700 file:text-white
+                        hover:file:bg-indigo-600 cursor-pointer
+                    "/>
+                </div>
+
+                <!-- Prompt Input (The Incantation) -->
+                <div>
+                    <label for="prompt" class="block text-sm font-medium text-indigo-200 mb-2">The Spell Incantation</label>
+                    <textarea id="prompt" rows="5" class="w-full p-4 input-dark border rounded-xl focus:ring-purple-400 focus:border-purple-400 transition duration-150 resize-none" placeholder="e.g., 'Separate the subject and transpose her onto a background of a shimmering cosmic nebula in the style of a vintage oil painting.'"></textarea>
+                </div>
+                
+                <p id="imageStatus" class="text-sm text-red-400"></p>
+
+                <!-- Transmute Button -->
+                <button onclick="handleGeneration()" id="generateBtn" class="btn-magic w-full text-white font-extrabold py-4 rounded-xl shadow-xl disabled:opacity-50 flex items-center justify-center text-lg">
+                    <span id="btnText">Execute Transmutation</span>
+                    <div id="spinner" class="loading-spinner h-6 w-6 border-4 border-t-white rounded-full ml-3 hidden"></div>
+                </button>
+
+                <!-- Error Message -->
+                <div id="errorBox" class="p-4 bg-red-900 border-l-4 border-red-500 text-red-300 rounded-lg hidden" role="alert">
+                    <p id="errorMessage" class="font-bold">Failure: The Incantation was Flawed.</p>
+                </div>
+            </div>
+
+            <!-- Result Card -->
+            <div class="forge-card space-y-6">
+                <h2 class="text-2xl font-semibold text-indigo-300 flex items-center mb-4">
+                    <span class="text-3xl mr-3">✨</span>
+                    2. The Resulting Artifact
+                </h2>
+                
+                <div id="imageResultBox" class="image-viewport rounded-xl">
+                    <p id="placeholderText" class="text-gray-500 italic">The forged artifact will materialize here.</p>
+                </div>
+
+                <!-- Download Button -->
+                <button id="downloadBtn" onclick="downloadImage()" class="w-full bg-green-500 hover:bg-green-600 text-white font-extrabold py-3 rounded-xl shadow-lg disabled:opacity-50 mt-4 hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 inline-block" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L10 11.586l2.293-2.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    Download Artifact (PNG)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase boilerplate kept for execution environment compatibility -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        window.firebaseInit = async function() {
+            try {
+                if (Object.keys(firebaseConfig).length === 0) { return; }
+                setLogLevel('Debug');
+                const app = initializeApp(firebaseConfig);
+                const auth = getAuth(app);
+                await new Promise(resolve => {
+                    onAuthStateChanged(auth, async (user) => {
+                        if (!user) {
+                            if (initialAuthToken) { await signInWithCustomToken(auth, initialAuthToken); } 
+                            else { await signInAnonymously(auth); }
+                        }
+                        window.userId = auth.currentUser?.uid || crypto.randomUUID();
+                        resolve();
+                    });
+                });
+            } catch (e) { console.error("Firebase init failed:", e); }
+        }
+        firebaseInit();
+    </script>
+
+    <script>
+        // --- CORE ALCHEMY ENGINE ---
+        
+        // ** API KEY NOTE: Kept empty for platform injection. Do NOT use this on a public web host. **
+        const API_KEY = ""; 
+        const MODEL_NAME = "gemini-2.5-flash-image-preview";
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+
+        let generatedImageBase64 = null;
+        let originalImageMimeType = null;
+        
+        // DOM References
+        const imageUpload = document.getElementById('imageUpload');
+        const promptInput = document.getElementById('prompt');
+        const generateBtn = document.getElementById('generateBtn');
+        const spinner = document.getElementById('spinner');
+        const btnText = document.getElementById('btnText');
+        const errorBox = document.getElementById('errorBox');
+        const errorMessage = document.getElementById('errorMessage');
+        const imageResultBox = document.getElementById('imageResultBox');
+        const placeholderText = document.getElementById('placeholderText');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const imageStatus = document.getElementById('imageStatus');
+
+
+        // Function to convert File to Base64 (The Raw Material Prep)
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const maxFileSize = 7 * 1024 * 1024; // 7MB limit
+                if (file.size > maxFileSize) {
+                    reject(new Error("The image scroll is too large (must be under 7MB)."));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => {
+                    const base64String = reader.result.split(',')[1];
+                    resolve(base64String);
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // UI State Management
+        function setGenerationState(isLoading) {
+            generateBtn.disabled = isLoading;
+            spinner.classList.toggle('hidden', !isLoading);
+            btnText.textContent = isLoading ? 'Transmuting...' : 'Execute Transmutation';
+            errorBox.classList.add('hidden');
+            downloadBtn.classList.add('hidden');
+        }
+
+        function displayError(message) {
+            errorMessage.innerHTML = `Failure: ${message}`;
+            errorBox.classList.remove('hidden');
+        }
+
+        function clearResult() {
+            imageResultBox.innerHTML = '';
+            placeholderText.classList.remove('hidden');
+            downloadBtn.classList.add('hidden');
+            generatedImageBase64 = null;
+            imageStatus.textContent = "";
+        }
+
+        function displayResult(base64Data) {
+            clearResult();
+            placeholderText.classList.add('hidden');
+            
+            const img = document.createElement('img');
+            img.src = `data:image/png;base64,${base64Data}`;
+            img.alt = "Forged Artifact";
+            imageResultBox.appendChild(img);
+
+            generatedImageBase64 = base64Data;
+            downloadBtn.classList.remove('hidden');
+        }
+        
+        // Retry mechanism (Exponential Backoff)
+        async function fetchWithBackoff(url, options, maxRetries = 5) {
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status === 429 && attempt < maxRetries - 1) {
+                        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+                    if (!response.ok) {
+                        const errorBody = await response.json();
+                        throw new Error(`API Error ${response.status}: ${errorBody.error?.message || response.statusText}`);
+                    }
+                    return response.json();
+                } catch (error) {
+                    if (attempt === maxRetries - 1) throw error;
+                    console.warn(`Forge attempt failed (Retry ${attempt + 1}/${maxRetries}):`, error.message);
+                }
+            }
+            throw new Error("The Cosmic Conduit failed after multiple attempts.");
+        }
+
+
+        // Main Transmutation Logic
+        async function handleGeneration() {
+            const file = imageUpload.files[0];
+            const userPrompt = promptInput.value.trim();
+            clearResult();
+
+            if (!file) {
+                imageStatus.textContent = "Please provide the raw image scroll (Catalyst).";
+                return;
+            }
+            if (!userPrompt) {
+                imageStatus.textContent = "Please whisper the full Spell Incantation (Prompt).";
+                return;
+            }
+
+            try {
+                setGenerationState(true);
+                const base64Image = await fileToBase64(file);
+                originalImageMimeType = file.type;
+
+                const payload = {
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [
+                                { text: userPrompt },
+                                {
+                                    inlineData: {
+                                        mimeType: originalImageMimeType,
+                                        data: base64Image
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    generationConfig: {
+                        responseModalities: ['IMAGE'] // Requesting image output
+                    },
+                };
+
+                const options = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                };
+
+                const result = await fetchWithBackoff(API_URL, options);
+                
+                const candidate = result.candidates?.[0];
+                const base64Data = candidate?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
+                
+                if (!base64Data) {
+                    const blockReason = candidate?.finishReason || "UNKNOWN";
+                    if (blockReason === "SAFETY") {
+                        throw new Error("The ancient glyphs were rejected by the Guardian of the Nexus (Safety Filter).");
+                    }
+                    throw new Error("The Transmutation failed to yield a visual artifact.");
+                }
+
+                displayResult(base64Data);
+
+            } catch (error) {
+                console.error("Alchemy Engine Error:", error);
+                displayError(`The spell failed. ${error.message}`);
+            } finally {
+                setGenerationState(false);
+            }
+        }
+
+        // Download Final Artifact
+        function downloadImage() {
+            if (!generatedImageBase64) {
+                displayError("No artifact materialized to download.");
+                return;
+            }
+
+            const link = document.createElement('a');
+            link.href = `data:image/png;base64,${generatedImageBase64}`;
+            
+            // Create a mystical filename
+            const cleanPrompt = promptInput.value.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 20);
+            link.download = `artifact_of_${cleanPrompt || 'transmutation'}.png`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Attach listeners
+        imageUpload.addEventListener('change', clearResult);
+        window.onload = function() {
+            console.log("Visual Transmutation Forge ready. Awaiting catalyst.");
+        };
+
+    </script>
+</body>
+</html>
+
