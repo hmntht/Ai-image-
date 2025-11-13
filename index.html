@@ -3,65 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Visual Transmutation Forge (V2)</title>
+    <title>The Visual Transmutation Forge (Large File)</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles for a magical, dark-themed look */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #1f2937; /* Dark background */
+            background-color: #1f2937;
             min-height: 100vh;
-            color: #d1d5db; /* Light gray text */
+            color: #d1d5db;
         }
         .container {
             max-width: 100%;
             padding: 1rem;
         }
         .forge-card {
-            background-color: #374151; /* Slightly lighter dark card */
+            background-color: #374151;
             border-radius: 1.5rem;
-            box-shadow: 0 0 30px rgba(79, 70, 229, 0.4); /* Subtle indigo glow */
+            box-shadow: 0 0 30px rgba(79, 70, 229, 0.4);
             padding: 2rem;
             border: 1px solid #4f46e5;
         }
         .btn-magic {
-            background-color: #8b5cf6; /* Vibrant purple */
+            background-color: #8b5cf6;
             transition: background-color 0.3s, transform 0.1s;
             box-shadow: 0 4px 15px rgba(139, 92, 246, 0.6);
         }
         .btn-magic:hover:not(:disabled) {
-            background-color: #7c3aed; /* Deeper purple on hover */
+            background-color: #7c3aed;
             transform: translateY(-1px);
         }
         .btn-magic:disabled {
             box-shadow: none;
             cursor: not-allowed;
         }
-
-        /* Image viewport style */
         .image-viewport {
             min-height: 250px;
-            height: 60vh; /* Fixed height for better layout */
+            height: 60vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             background-color: #1f2937;
-            border: 2px dashed #4f46e5; /* Indigo dashed border */
+            border: 2px dashed #4f46e5;
             overflow: hidden;
             position: relative;
         }
-
-        /* Style for the input image preview */
         #inputPreview {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
             border-radius: 0.75rem;
         }
-        
-        /* Style for the result image */
         #resultImage {
             max-width: 100%;
             max-height: 100%;
@@ -69,8 +63,6 @@
             border-radius: 0.75rem;
             box-shadow: 0 0 10px rgba(139, 92, 246, 0.8);
         }
-        
-        /* Loading animation for the result box */
         .loading-animation {
             height: 48px;
             width: 48px;
@@ -82,7 +74,6 @@
         @keyframes spinner {
             to {transform: rotate(360deg);}
         }
-
         .glow-text {
             text-shadow: 0 0 5px #a78bfa;
         }
@@ -95,11 +86,9 @@
             ring-color: #a78bfa;
             border-color: #a78bfa;
         }
-
-        /* Responsive adjustments */
         @media (max-width: 1024px) {
             .image-viewport {
-                height: 40vh; /* Slightly smaller on mobile */
+                height: 40vh;
             }
         }
     </style>
@@ -114,8 +103,8 @@
 
     <div id="app" class="container mx-auto">
         <header class="text-center py-8 mb-8">
-            <h1 class="text-4xl font-extrabold glow-text text-indigo-400 italic">The Visual Transmutation Forge (V2)</h1>
-            <p class="text-indigo-300 mt-2 italic">A chamber for image alteration via whispered incantation.</p>
+            <h1 class="text-4xl font-extrabold glow-text text-indigo-400 italic">The Visual Transmutation Forge (Large File)</h1>
+            <p class="text-indigo-300 mt-2 italic">Supports images up to 4 MB via file upload method.</p>
         </header>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -128,7 +117,7 @@
 
                 <!-- File Input (The Catalyst) -->
                 <div>
-                    <label for="imageUpload" class="block text-sm font-medium text-indigo-200 mb-2">The Raw Material (Image Scroll)</label>
+                    <label for="imageUpload" class="block text-sm font-medium text-indigo-200 mb-2">The Raw Material (Image Scroll, Max 4 MB)</label>
                     <input type="file" id="imageUpload" accept="image/jpeg, image/png" class="block w-full text-sm text-indigo-200
                         file:mr-4 file:py-3 file:px-4
                         file:rounded-xl file:border-0
@@ -155,7 +144,7 @@
                 <!-- Transmute Button -->
                 <button onclick="handleGeneration()" id="generateBtn" class="btn-magic w-full text-white font-extrabold py-4 rounded-xl shadow-xl disabled:opacity-50 flex items-center justify-center text-lg">
                     <span id="btnText">Execute Transmutation</span>
-                    <div id="spinner" class="loading-spinner h-6 w-6 border-4 border-t-white rounded-full ml-3 hidden"></div>
+                    <div id="spinner" class="loading-animation h-6 w-6 ml-3 hidden"></div>
                 </button>
 
                 <!-- Error Message -->
@@ -220,12 +209,15 @@
         
         const API_KEY = typeof API_KEY_GLOBAL !== 'undefined' ? API_KEY_GLOBAL : "";
         const MODEL_NAME = "gemini-2.5-flash-image-preview";
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
-        // CRITICAL FIX: The API has a hard 1MB payload limit, so we set a safe file limit of 800 KB
-        const MAX_FILE_SIZE = 800 * 1024; 
+        
+        // New endpoints for file operations
+        const UPLOAD_URL = `https://generativelanguage.googleapis.com/v1beta/files?key=${API_KEY}`;
+        const GENERATE_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+        
+        // Set the size limit to 4 MB for file upload (a safer working limit for browser-based file uploads)
+        const MAX_FILE_SIZE = 4 * 1024 * 1024; 
 
         let generatedImageBase64 = null;
-        let originalImageMimeType = null;
         
         // DOM References
         const imageUpload = document.getElementById('imageUpload');
@@ -259,9 +251,9 @@
             }
         }
 
-        function setGenerationState(isLoading) {
+        function setGenerationState(isLoading, message = 'Transmuting...') {
             generateBtn.disabled = isLoading;
-            document.getElementById('btnText').textContent = isLoading ? 'Transmuting...' : 'Execute Transmutation';
+            document.getElementById('btnText').textContent = isLoading ? message : 'Execute Transmutation';
             errorBox.classList.add('hidden');
             downloadBtn.classList.add('hidden');
 
@@ -277,7 +269,7 @@
         }
 
         function displayError(message) {
-            setGenerationState(false); // Stop loading animation
+            setGenerationState(false);
             errorMessage.innerHTML = `Failure: ${message}`;
             errorBox.classList.remove('hidden');
             resultPlaceholder.classList.remove('hidden');
@@ -285,7 +277,6 @@
         }
 
         function displayResult(base64Data) {
-            // Clear placeholder/spinner
             imageResultBox.innerHTML = ''; 
             resultPlaceholder.classList.add('hidden');
             
@@ -297,25 +288,6 @@
 
             generatedImageBase64 = base64Data;
             downloadBtn.classList.remove('hidden');
-        }
-        
-        // --- CORE LOGIC ---
-
-        // Function to convert File to Base64 (The Raw Material Prep)
-        function fileToBase64(file) {
-            return new Promise((resolve, reject) => {
-                if (file.size > MAX_FILE_SIZE) {
-                    reject(new Error(`The image scroll is too large. It must be under ${Math.round(MAX_FILE_SIZE / 1024)} KB for this application.`));
-                    return;
-                }
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
-                reader.onload = () => {
-                    const base64String = reader.result.split(',')[1];
-                    resolve(base64String);
-                };
-                reader.onerror = error => reject(error);
-            });
         }
         
         // Retry mechanism (Exponential Backoff)
@@ -343,11 +315,13 @@
         }
 
 
-        // Main Transmutation Logic
+        // --- MAIN FILE UPLOAD AND GENERATION LOGIC ---
+
         async function handleGeneration() {
             const file = imageUpload.files[0];
             const userPrompt = promptInput.value.trim();
             imageStatus.textContent = "";
+            let uploadedFileDetails = null;
 
             if (!file) {
                 imageStatus.textContent = "Please provide the raw image scroll (Catalyst).";
@@ -361,12 +335,37 @@
                 displayError("The API Key is missing. Please ensure API_KEY_GLOBAL is defined.");
                 return;
             }
+            if (file.size > MAX_FILE_SIZE) {
+                 imageStatus.textContent = `File is too large. Max size is ${Math.round(MAX_FILE_SIZE / 1024 / 1024)} MB.`;
+                 return;
+            }
 
 
             try {
-                setGenerationState(true);
-                const base64Image = await fileToBase64(file);
-                originalImageMimeType = file.type;
+                setGenerationState(true, "Uploading Catalyst...");
+
+                // 1. UPLOAD THE LARGE FILE
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('mimeType', file.type); 
+
+                const uploadOptions = {
+                    method: 'POST',
+                    body: formData,
+                    // Note: Content-Type is set automatically by the browser for FormData
+                };
+
+                const uploadResult = await fetchWithBackoff(UPLOAD_URL, uploadOptions);
+                uploadedFileDetails = uploadResult;
+                const fileResourceName = uploadedFileDetails.name; // e.g., files/abcdefg
+
+                if (!fileResourceName) {
+                     throw new Error("File upload failed to return a resource name.");
+                }
+
+
+                // 2. GENERATE CONTENT USING THE FILE RESOURCE NAME
+                setGenerationState(true, "Transmuting Artifact...");
 
                 const payload = {
                     contents: [
@@ -374,12 +373,7 @@
                             role: "user",
                             parts: [
                                 { text: userPrompt },
-                                {
-                                    inlineData: {
-                                        mimeType: originalImageMimeType,
-                                        data: base64Image
-                                    }
-                                }
+                                { fileData: { mimeType: file.type, fileUri: fileResourceName } }
                             ]
                         }
                     ],
@@ -388,13 +382,13 @@
                     },
                 };
 
-                const options = {
+                const generateOptions = {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 };
 
-                const result = await fetchWithBackoff(API_URL, options);
+                const result = await fetchWithBackoff(GENERATE_URL, generateOptions);
                 
                 const candidate = result.candidates?.[0];
                 const base64Data = candidate?.content?.parts?.find(p => p.inlineData)?.inlineData?.data;
@@ -408,14 +402,37 @@
                 }
 
                 displayResult(base64Data);
+                
+                // 3. CLEAN UP (Delete the temporary file)
+                await deleteFile(fileResourceName);
+
 
             } catch (error) {
                 console.error("Alchemy Engine Error:", error);
                 displayError(`The spell failed. ${error.message}`);
+                // Ensure cleanup happens even on error
+                if (uploadedFileDetails && uploadedFileDetails.name) {
+                    await deleteFile(uploadedFileDetails.name);
+                }
+
             } finally {
                 setGenerationState(false);
             }
         }
+
+        // Deletion function for cleanup
+        async function deleteFile(fileResourceName) {
+            const DELETE_URL = `https://generativelanguage.googleapis.com/v1beta/${fileResourceName}?key=${API_KEY}`;
+            try {
+                const response = await fetch(DELETE_URL, { method: 'DELETE' });
+                if (!response.ok) {
+                    console.warn(`Failed to delete file ${fileResourceName}. Status: ${response.status}`);
+                }
+            } catch (error) {
+                console.warn(`Error during file deletion: ${error.message}`);
+            }
+        }
+
 
         // Download Final Artifact
         function downloadImage() {
@@ -427,7 +444,6 @@
             const link = document.createElement('a');
             link.href = `data:image/png;base64,${generatedImageBase64}`;
             
-            // Create a mystical filename
             const cleanPrompt = promptInput.value.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 20);
             link.download = `artifact_of_${cleanPrompt || 'transmutation'}.png`;
             
@@ -454,4 +470,5 @@
     </script>
 </body>
 </html>
+
 
