@@ -201,9 +201,11 @@
         // Function to convert File to Base64 (The Raw Material Prep)
         function fileToBase64(file) {
             return new Promise((resolve, reject) => {
-                const maxFileSize = 7 * 1024 * 1024; // 7MB limit
+                // FIX: Setting max size to 800 KB to safely stay under the API's hard 1 MB payload limit
+                const maxFileSize = 800 * 1024; 
+                
                 if (file.size > maxFileSize) {
-                    reject(new Error("The image scroll is too large (must be under 7MB)."));
+                    reject(new Error("The image scroll is too large. For this version, it must be under 800 KB."));
                     return;
                 }
                 const reader = new FileReader();
@@ -336,9 +338,9 @@
                 if (!base64Data) {
                     const blockReason = candidate?.finishReason || "UNKNOWN";
                     if (blockReason === "SAFETY") {
-                        throw new Error("The ancient glyphs were rejected by the Guardian of the Nexus (Safety Filter).");
+                        throw new Error("The ancient glyphs were rejected by the Guardian of the Nexus (Safety Filter). Please try a different image or prompt.");
                     }
-                    throw new Error("The Transmutation failed to yield a visual artifact.");
+                    throw new Error("The Transmutation failed to yield a visual artifact. Reason: " + (blockReason || "Unknown API Response"));
                 }
 
                 displayResult(base64Data);
